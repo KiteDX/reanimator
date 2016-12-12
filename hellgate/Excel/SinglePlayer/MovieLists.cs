@@ -28,6 +28,7 @@ namespace Hellgate.Excel
         public Int32 list1g;
         [ExcelOutput(IsTableIndex = true, TableStringId = "MOVIES")]
         public Int32 list1h;
+        /*
         [ExcelOutput(IsTableIndex = true, TableStringId = "MOVIES")]
         public Int32 list2a;
         [ExcelOutput(IsTableIndex = true, TableStringId = "MOVIES")]
@@ -44,5 +45,6 @@ namespace Hellgate.Excel
         public Int32 list2g;
         [ExcelOutput(IsTableIndex = true, TableStringId = "MOVIES")]
         public Int32 list2h;
+        */
     }
 }

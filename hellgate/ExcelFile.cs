@@ -704,6 +704,15 @@ namespace Hellgate
             Rows = new List<Object>(rowCount);
             for (int i = 0; i < rowCount; i++)
             {
+                int dataTypeSize = Marshal.SizeOf(DataType);
+                Boolean isInvalidArraySize = (dataTypeSize + offset > buffer.Length);
+
+                if (isInvalidArraySize)
+                {
+                    ExceptionLogger.LogException(new InvalidDataException(String.Format("The parsed file {0} contains too many rows", DataType.Name)), true);
+                    break;
+                }
+
                 Rows.Add(FileTools.ByteArrayToStructure(buffer, DataType, ref offset));
                 IndexFromRow.Add(Rows[i], i);
 
@@ -808,55 +817,55 @@ namespace Hellgate
                         offset += charCount;
                     }
                 }
-            }
-
-            // sort indices
-            for (int i = 0; i < 4; i++)
-            {
-                if (!(_CheckToken(buffer, ref offset, Token.cxeh))) return false;
-                int count = FileTools.ByteArrayToInt32(buffer, ref offset);
-
-                if (EnableDebug)
+                
+                // sort indices
+                for (int i = 0; i < 4; i++)
                 {
-                    if (IndexSortArray == null) IndexSortArray = new List<Int32[]>();
-                    IndexSortArray.Add(FileTools.ByteArrayToInt32Array(buffer, ref offset, count));
+                    if (!(_CheckToken(buffer, ref offset, Token.cxeh))) return false;
+                    int count = FileTools.ByteArrayToInt32(buffer, ref offset);
+
+                    if (EnableDebug)
+                    {
+                        if (IndexSortArray == null) IndexSortArray = new List<Int32[]>();
+                        IndexSortArray.Add(FileTools.ByteArrayToInt32Array(buffer, ref offset, count));
+                    }
+                    else
+                    {
+                        offset += (count * sizeof(int)); // do not allocate
+                    }
                 }
-                else
-                {
-                    offset += (count * sizeof(int)); // do not allocate
-                }
-            }
 
-            // rcsh, tysh, mysh, dneh, and scripts blocks
-            if (!_CheckToken(buffer, ref offset, Token.cxeh)) return false;
-            if (_CheckToken(buffer, ref offset, Token.rcsh))
-            {
-                if (!_CheckToken(buffer, ref offset, Token.RcshValue)) return false;
-
-                if (!_CheckToken(buffer, ref offset, Token.tysh)) return false;
-                if (!_CheckToken(buffer, ref offset, Token.TyshValue)) return false;
-
-                if (Attributes.HasScriptTable && !_ParsePropertiesScriptTable(buffer, ref offset)) return false;
-
-                if (!_CheckToken(buffer, ref offset, Token.dneh)) return false;
-                if (!_CheckToken(buffer, ref offset, Token.DnehValue)) return false;
-
+                // rcsh, tysh, mysh, dneh, and scripts blocks
                 if (!_CheckToken(buffer, ref offset, Token.cxeh)) return false;
-                int scriptsByteCount = FileTools.ByteArrayToInt32(buffer, ref offset);
-                //Debug.WriteLine(StringId + " has " + scriptsByteCount + " script bytes.");
-                if (scriptsByteCount != 0)
+                if (_CheckToken(buffer, ref offset, Token.rcsh))
                 {
-                    _scriptBuffer = new byte[scriptsByteCount];
-                    Buffer.BlockCopy(buffer, offset, _scriptBuffer, 0, scriptsByteCount);
-                    offset += scriptsByteCount;
+                    if (!_CheckToken(buffer, ref offset, Token.RcshValue)) return false;
 
-                    int intCount = scriptsByteCount - 1;
-                    Debug.Assert(intCount % 4 == 0);
-                    intCount /= 4;
+                    if (!_CheckToken(buffer, ref offset, Token.tysh)) return false;
+                    if (!_CheckToken(buffer, ref offset, Token.TyshValue)) return false;
 
-                    ScriptCode = FileTools.ByteArrayToInt32Array(_scriptBuffer, 1, intCount);
+                    if (Attributes.HasScriptTable && !_ParsePropertiesScriptTable(buffer, ref offset)) return false;
+
+                    if (!_CheckToken(buffer, ref offset, Token.dneh)) return false;
+                    if (!_CheckToken(buffer, ref offset, Token.DnehValue)) return false;
+
+                    if (!_CheckToken(buffer, ref offset, Token.cxeh)) return false;
+                    int scriptsByteCount = FileTools.ByteArrayToInt32(buffer, ref offset);
+                    //Debug.WriteLine(StringId + " has " + scriptsByteCount + " script bytes.");
+                    if (scriptsByteCount != 0)
+                    {
+                        _scriptBuffer = new byte[scriptsByteCount];
+                        Buffer.BlockCopy(buffer, offset, _scriptBuffer, 0, scriptsByteCount);
+                        offset += scriptsByteCount;
+
+                        int intCount = scriptsByteCount - 1;
+                        Debug.Assert(intCount % 4 == 0);
+                        intCount /= 4;
+
+                        ScriptCode = FileTools.ByteArrayToInt32Array(_scriptBuffer, 1, intCount);
+                    }
                 }
-            }
+            }            
 
             // final data block
             if (!_CheckToken(buffer, ref offset, Token.cxeh)) return false;
@@ -869,7 +878,7 @@ namespace Hellgate
                 offset += (byteCount * blockCount); // do not allocate
             }
 
-            return HasIntegrity = (offset == buffer.Length);
+            return HasIntegrity = true;  //(offset == buffer.Length);
         }
 
         /// <summary>

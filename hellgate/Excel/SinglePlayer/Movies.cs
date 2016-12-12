@@ -30,7 +30,7 @@ namespace Hellgate.Excel
         public RegionList regionList5;
         public RegionList regionList6;
         public RegionList regionList7;
-        public RegionList regionList8;
+        //public RegionList regionList8;
         [ExcelOutput(ConstantValue = -1)]
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 23)]
         Int32[] regionList;
